@@ -1,0 +1,95 @@
+bool doRemoteXY;
+#define REMOTEXY_MODE__SOFTSERIAL
+#include <SoftwareSerial.h>
+
+
+// RemoteXY connection settings
+#define REMOTEXY_SERIAL_RX 6
+#define REMOTEXY_SERIAL_TX 7
+#define REMOTEXY_SERIAL_SPEED 9600
+#define REMOTEXY_ACCESS_PASSWORD "module" // change to whatever you want but always remember your passwords!
+
+
+#include <RemoteXY.h>
+
+
+const int mosfetPin = 3; // MOSFET control pin
+SoftwareSerial BTSerial(10, 11); // RX, TX for Bluetooth communication
+String receivedMessage = "";     // Message received via Bluetooth
+
+
+// RemoteXY GUI configuration
+#pragma pack(push, 1)  
+uint8_t RemoteXY_CONF[] =   // 42 bytes
+  { 255,1,0,0,0,35,0,19,0,0,0,110,97,110,111,95,116,97,122,101,114,
+  0,232,1,106,200,1,1,1,0,1,35,77,39,39,0,164,191,90,65,80,0 };
+
+
+// This structure defines all the variables and events of your control interface
+struct {
+  uint8_t button_01;      // =1 if button pressed, else =0
+  uint8_t connect_flag;   // =1 if wire connected, else =0
+} RemoteXY;
+#pragma pack(pop)
+
+
+void setup() {
+  Serial.begin(9600);			
+  pinMode(5, OUTPUT);     // this could have been done by conecting
+  digitalWrite(5, HIGH);  // the other side to 3.3v or just INPUT_PULLUP
+  delay(10);              // and not just connect other side of switch
+  pinMode(4, INPUT);
+
+
+  if (digitalRead(4)) {			// this whole doRemoteXY thing is because when conbining the two bluetooth modes normaly was too difficult
+    doRemoteXY = true;
+    RemoteXY_Init(); // Initialize RemoteXY
+    Serial.println("yoyo");
+  } else {
+    doRemoteXY = false;
+    BTSerial.begin(9600); // Initialize Bluetooth
+  }
+
+  digitalWrite(5, LOW);
+ 
+  pinMode(mosfetPin, OUTPUT);
+  digitalWrite(mosfetPin, LOW); // Ensure MOSFET is off initially
+  Serial.println("hi");         // debugging stuff. you should probably remove that
+}
+
+
+void loop() {
+  // Handle RemoteXY interactions
+  if (doRemoteXY) {    
+    RemoteXY_Handler();
+    if (RemoteXY.button_01 == 1) {
+      digitalWrite(mosfetPin, HIGH);
+    } else {
+      digitalWrite(mosfetPin, LOW);
+    }
+    Serial.println("hii");
+  }
+  else {
+    // Handle Bluetooth interactions
+    if (BTSerial.available()) {   // Check if data is available
+      char c = BTSerial.read();   // Read one character
+      if (c == '\n') {            // Check for end of message
+        receivedMessage.trim();   // Remove any extra whitespace
+        Serial.println("Received: " + receivedMessage); // Debug message
+       
+        // Control the MOSFET based on the message
+        if (receivedMessage == "turn on") {
+          digitalWrite(mosfetPin, HIGH);
+        } else if (receivedMessage == "turn off") {
+          digitalWrite(mosfetPin, LOW);
+        }
+
+        receivedMessage = ""; // Clear the message buffer
+      } else {
+        receivedMessage += c; // Append character to message
+      }
+    }
+  }
+  delay(100); // not recomended in the RemoteXY library but it seems to work fine. although maybe consider less delay or RemoteXYDelay() in the RemoteXY library 
+}
+
