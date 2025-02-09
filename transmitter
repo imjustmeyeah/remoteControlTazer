@@ -1,0 +1,36 @@
+
+#include <SoftwareSerial.h>
+
+
+SoftwareSerial BTSerial(10, 11); // RX, TX
+const int buttonPin = 2;         // Button pin
+bool buttonState = false;        // State of the button
+bool lastButtonState = false;    // Last state of the button
+
+
+void setup() {
+  pinMode(buttonPin, INPUT_PULLUP); // Configure button pin 
+  BTSerial.begin(9600);            // Start Bluetooth serial communication
+  //Serial.begin(9600);              // Optional for debugging
+}
+
+
+void loop() {
+  buttonState = !digitalRead(buttonPin); // Read button (inverted because of INPUT_PULLUP)
+
+
+  // Check if the button state has changed
+  if (buttonState != lastButtonState) {
+    if (buttonState) {
+      BTSerial.println("turn on");
+      //Serial.println("Sent: turn on"); // Debug message
+    } else {
+      BTSerial.println("turn off");
+      //Serial.println("Sent: turn off"); // Debug message
+    }
+    lastButtonState = buttonState; // Update the last state
+  }
+
+
+  delay(50); // Debounce delay
+}
