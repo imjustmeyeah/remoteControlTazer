@@ -60,15 +60,17 @@ void setup() {
 
 void loop() {
   // Handle RemoteXY interactions
-  if (doRemoteXY) {    
+  if (doRemoteXY) {
     RemoteXY_Handler();
     if (RemoteXY.button_01 == 1) {
       digitalWrite(mosfetPin, HIGH);
-    } else {
+    } 
+    else {
       digitalWrite(mosfetPin, LOW);
     }
-    Serial.println("hii");
-  }
+    //Serial.println("hii");
+    delay(10);
+  } 
   else {
     // Handle Bluetooth interactions
     if (BTSerial.available()) {   // Check if data is available
@@ -76,20 +78,22 @@ void loop() {
       if (c == '\n') {            // Check for end of message
         receivedMessage.trim();   // Remove any extra whitespace
         Serial.println("Received: " + receivedMessage); // Debug message
-       
+        
         // Control the MOSFET based on the message
         if (receivedMessage == "turn on") {
           digitalWrite(mosfetPin, HIGH);
-        } else if (receivedMessage == "turn off") {
+        } 
+        else if (receivedMessage == "turn off") {
           digitalWrite(mosfetPin, LOW);
         }
 
         receivedMessage = ""; // Clear the message buffer
-      } else {
+      } 
+      else {
         receivedMessage += c; // Append character to message
       }
     }
+    delay(10);
   }
-  delay(100); // not recomended in the RemoteXY library but it seems to work fine. although maybe consider less delay or RemoteXYDelay() in the RemoteXY library 
-}
 
+}
